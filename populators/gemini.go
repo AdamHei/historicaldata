@@ -3,7 +3,7 @@ package populators
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/adamhei/honors-project/exchanges/models"
+	"github.com/adamhei/honorsproject/exchanges/models"
 	"gopkg.in/mgo.v2"
 	"log"
 	"net/http"
