@@ -24,18 +24,18 @@ func Populate(db *mgo.Database) {
 		orders := getTradeHistory(indexTime)
 
 		bulkInsert.Insert(orders)
-		fmt.Println("Prepared", len(orders), "records")
+		log.Println("Prepared", len(orders), "orders")
 		// Offset by 1 to exclude last trade
-		indexTime = time.Unix(0, orders[0].TimestampMs*int64(time.Millisecond) + 1)
+		indexTime = time.Unix(0, orders[0].TimestampMs*int64(time.Millisecond)+1)
 	}
 
 	res, err := bulkInsert.Run()
 	if err != nil {
-		fmt.Println("Couldn't perform batch insert")
+		log.Println("Couldn't perform batch insert")
 		log.Fatal(err)
 	}
 
-	fmt.Println("Modified", res.Modified, "records")
+	log.Println("Modified", res.Modified, "records")
 }
 
 func getTradeHistory(from time.Time) []models.GeminiOrder {
