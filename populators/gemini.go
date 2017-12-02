@@ -19,11 +19,13 @@ func Populate(db *mgo.Database) {
 	collection := db.C(collectionName)
 	bulkInsert := collection.Bulk()
 
-	latestTimestampMS := getLatestTimestampMs(collection)
-	log.Println("Latest timestampsms is", latestTimestampMS)
+	earliestTimestampMs := getTimestampMs(collection, false)
+	latestTimestampMS := getTimestampMs(collection, true)
+	log.Println("Earliest doc:", time.Unix(0, earliestTimestampMs * int64(time.Millisecond)))
+	log.Println("Latest trade:", time.Unix(0, latestTimestampMS * int64(time.Millisecond)))
+
 	now := time.Now()
 	count := 0
-
 	for indexTime := time.Unix(0, latestTimestampMS*int64(time.Millisecond)); indexTime.Before(now); {
 
 		orders := getTradeHistory(indexTime)
@@ -33,8 +35,8 @@ func Populate(db *mgo.Database) {
 		indexTime = time.Unix(0, orders[0].TimestampMs*int64(time.Millisecond)+1)
 
 		count++
-		// Perform batch after every 100 requests
-		if count%100 == 0 {
+		// Perform batch after every 10 requests
+		if count%10 == 0 {
 			count = 0
 			res, err := bulkInsert.Run()
 			if err != nil {
@@ -68,9 +70,16 @@ func getTradeHistory(from time.Time) []models.GeminiOrder {
 	return orders
 }
 
-func getLatestTimestampMs(coll *mgo.Collection) int64 {
+func getTimestampMs(coll *mgo.Collection, latest bool) int64 {
+	query := ""
+	if latest {
+		query = "-timestampms"
+	} else {
+		query = "timestampms"
+	}
+
 	res := new(models.GeminiOrder)
-	coll.Find(bson.M{}).Sort("-timestampms").One(&res)
+	coll.Find(bson.M{}).Sort(query).One(&res)
 	if res.TimestampMs != 0 {
 		return res.TimestampMs + 1
 	}
