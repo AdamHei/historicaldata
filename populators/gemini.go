@@ -21,29 +21,29 @@ func Populate(db *mgo.Database) {
 
 	earliestTimestampMs := getTimestampMs(collection, false)
 	latestTimestampMS := getTimestampMs(collection, true)
-	log.Println("Earliest doc:", time.Unix(0, earliestTimestampMs * int64(time.Millisecond)))
-	log.Println("Latest trade:", time.Unix(0, latestTimestampMS * int64(time.Millisecond)))
+	log.Println("Earliest trade:", time.Unix(0, earliestTimestampMs*int64(time.Millisecond)))
+	log.Println("Latest trade:", time.Unix(0, latestTimestampMS*int64(time.Millisecond)))
 
 	now := time.Now()
-	count := 0
+	requests := 0
 	for indexTime := time.Unix(0, latestTimestampMS*int64(time.Millisecond)); indexTime.Before(now); {
-
+		log.Println(indexTime)
 		orders := getTradeHistory(indexTime)
-		bulkInsert.Insert(toInterfaceSlice(orders)...)
+		bulkInsert.Upsert(toInterfaceSlice(orders)...)
 
 		// Offset by 1 to exclude last trade
 		indexTime = time.Unix(0, orders[0].TimestampMs*int64(time.Millisecond)+1)
 
-		count++
-		// Perform batch after every 10 requests
-		if count%10 == 0 {
-			count = 0
+		requests++
+		// After every 2 requests, we'll have 1000 orders, the max number of inserts MongoDB supports
+		if requests%2 == 0 {
 			res, err := bulkInsert.Run()
 			if err != nil {
 				log.Println("Couldn't perform batch insert")
 				log.Fatal(err)
 			}
 			log.Println("Matched", res.Matched, "docs and modified", res.Modified)
+			bulkInsert = collection.Bulk()
 		}
 	}
 }
@@ -70,9 +70,9 @@ func getTradeHistory(from time.Time) []models.GeminiOrder {
 	return orders
 }
 
-func getTimestampMs(coll *mgo.Collection, latest bool) int64 {
+func getTimestampMs(coll *mgo.Collection, byMostRecent bool) int64 {
 	query := ""
-	if latest {
+	if byMostRecent {
 		query = "-timestampms"
 	} else {
 		query = "timestampms"
