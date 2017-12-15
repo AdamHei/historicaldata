@@ -3,7 +3,7 @@ package populators
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/adamhei/honorsproject/exchanges/models"
+	"github.com/adamhei/historicaldata/models"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -12,11 +12,10 @@ import (
 )
 
 const historyUrl = "https://api.gemini.com/v1/trades/btcusd?since=%d&limit_trades=500"
-const collectionName = "gemini"
 const firstTradeTimestampMs = 1444311607801
 
 func Populate(db *mgo.Database) {
-	collection := db.C(collectionName)
+	collection := db.C(models.GeminiCollection)
 	bulkInsert := collection.Bulk()
 
 	earliestTimestampMs := getTimestampMs(collection, false)
@@ -40,7 +39,7 @@ func Populate(db *mgo.Database) {
 			res, err := bulkInsert.Run()
 			if err != nil {
 				log.Println("Couldn't perform batch insert")
-				log.Fatal(err)
+				panic(err)
 			}
 			log.Println("Matched", res.Matched, "docs and modified", res.Modified)
 			bulkInsert = collection.Bulk()
@@ -65,7 +64,7 @@ func getTradeHistory(from time.Time) []models.GeminiOrder {
 	}
 
 	// Be considerate
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	return orders
 }
