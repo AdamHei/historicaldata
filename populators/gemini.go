@@ -52,15 +52,32 @@ func getTradeHistory(from time.Time) []models.GeminiOrder {
 
 	resp, err := http.Get(formattedUrl)
 	if err != nil {
+		log.Println("Could not perform GET request with ", historyUrl)
 		log.Fatal(err)
 	}
 
 	orders := make([]models.GeminiOrder, 0)
-	err = json.NewDecoder(resp.Body).Decode(&orders)
-	resp.Body.Close()
+	errResp := new(models.GeminiError)
+	decoder := json.NewDecoder(resp.Body)
 
-	if err != nil {
-		log.Fatal(err)
+	if resp.StatusCode == 200 {
+		err = decoder.Decode(&orders)
+
+		if err != nil {
+			log.Println(fmt.Sprintf("Gemini response from %s was not array of Gemini Orders", historyUrl))
+			log.Fatal(err)
+		}
+	} else {
+		err = decoder.Decode(&errResp)
+
+		if err != nil {
+			log.Println(fmt.Sprintf("Gemini error with code %d from %s was not a GeminiError", resp.StatusCode, historyUrl))
+			log.Fatal(err)
+		}
+		log.Println("Gemini error:")
+		log.Println("Result:", errResp.Result)
+		log.Println("Reason:", errResp.Reason)
+		log.Fatal("Message:", errResp.Message)
 	}
 
 	// Be considerate

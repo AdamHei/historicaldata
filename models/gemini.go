@@ -11,3 +11,9 @@ type GeminiOrder struct {
 	Exchange    string `json:"exchange"`
 	Type        string `json:"type"`
 }
+
+type GeminiError struct {
+	Result  string `json:"result"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
+}
