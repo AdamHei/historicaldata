@@ -3,7 +3,7 @@ package populators
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/adamhei/historicaldata/models"
+	"github.com/adamhei/historicaldata/trademodels"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -15,7 +15,7 @@ const historyUrl = "https://api.gemini.com/v1/trades/btcusd?since=%d&limit_trade
 const firstTradeTimestampMs = 1444311607801
 
 func Populate(db *mgo.Database) {
-	collection := db.C(models.GeminiCollection)
+	collection := db.C(trademodels.GeminiCollection)
 	bulkInsert := collection.Bulk()
 
 	earliestTimestampMs := getTimestampMs(collection, false)
@@ -47,7 +47,7 @@ func Populate(db *mgo.Database) {
 	}
 }
 
-func getTradeHistory(from time.Time) []models.GeminiOrder {
+func getTradeHistory(from time.Time) []trademodels.GeminiOrder {
 	formattedUrl := fmt.Sprintf(historyUrl, from.Unix())
 
 	resp, err := http.Get(formattedUrl)
@@ -56,8 +56,8 @@ func getTradeHistory(from time.Time) []models.GeminiOrder {
 		log.Fatal(err)
 	}
 
-	orders := make([]models.GeminiOrder, 0)
-	errResp := new(models.GeminiError)
+	orders := make([]trademodels.GeminiOrder, 0)
+	errResp := new(trademodels.GeminiError)
 	decoder := json.NewDecoder(resp.Body)
 
 	if resp.StatusCode == 200 {
@@ -94,7 +94,7 @@ func getTimestampMs(coll *mgo.Collection, byMostRecent bool) int64 {
 		query = "timestampms"
 	}
 
-	res := new(models.GeminiOrder)
+	res := new(trademodels.GeminiOrder)
 	coll.Find(bson.M{}).Sort(query).One(&res)
 	if res.TimestampMs != 0 {
 		return res.TimestampMs + 1
@@ -102,7 +102,7 @@ func getTimestampMs(coll *mgo.Collection, byMostRecent bool) int64 {
 	return firstTradeTimestampMs
 }
 
-func toInterfaceSlice(orders []models.GeminiOrder) []interface{} {
+func toInterfaceSlice(orders []trademodels.GeminiOrder) []interface{} {
 	arr := make([]interface{}, len(orders))
 	for i, v := range orders {
 		arr[i] = v

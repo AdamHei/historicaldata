@@ -1,4 +1,4 @@
-package models
+package trademodels
 
 type GdaxBucket struct {
 	Timestamp              int64

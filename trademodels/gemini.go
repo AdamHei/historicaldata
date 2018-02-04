@@ -1,4 +1,4 @@
-package models
+package trademodels
 
 const GeminiCollection = "gemini"
 
